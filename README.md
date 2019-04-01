@@ -1,9 +1,13 @@
-#Consumer and producer kafka samples
+Consumer/Producer kafka samples
+========
 
-###Environment
-#####Start kafka 
+Setup environment:
+```
 - cd env
 - docker-compose up
+```
 
-##### Create kafka topic
+Create kafka topic:
+```
 - kafka-topics --create --zookeeper localhost:2181 --replication-factor 1 --partitions 3 --topic first-topic
+```
