@@ -14,17 +14,21 @@ import java.util.Map;
 
 public class ProducerSample {
 
-	public static void main(String[] args) {
-		final Logger logger = LoggerFactory.getLogger(ProducerSample.class);
-
+	public KafkaProducer<String, String> getProducer(String clientId) {
 		Map<String, Object> properties = new HashMap<>();
 		properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-		properties.put(ProducerConfig.CLIENT_ID_CONFIG, "consumer-sample");
+		properties.put(ProducerConfig.CLIENT_ID_CONFIG, clientId);
 		properties.put(ProducerConfig.ACKS_CONFIG, "all");
 		properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
 		properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+		return new KafkaProducer<>(properties);
+	}
 
-		var producer = new KafkaProducer<String, String>(properties);
+	public static void main(String[] args) {
+		final Logger logger = LoggerFactory.getLogger(ProducerSample.class);
+
+		var producerSample = new ProducerSample();
+		var producer = producerSample.getProducer("consumer-sample");
 		var producerRecord = new ProducerRecord<String, String>("first-topic", "message");
 		producer.send(producerRecord, (RecordMetadata metadata, Exception exception) -> {
 			if (exception == null) {
