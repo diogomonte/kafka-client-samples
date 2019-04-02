@@ -25,7 +25,7 @@ public class ConsumerSample {
 	private static final String TOPIC = "second-topic";
 	private static final Logger logger = LoggerFactory.getLogger(ConsumerSample.class);
 
-	private Map<String, Object> getProperties(String group, String offsetConfig) {
+	public Map<String, Object> getProperties(String group, String offsetConfig) {
 		Map<String, Object> properties = new HashMap<>();
 		properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
 		properties.put(ConsumerConfig.GROUP_ID_CONFIG, group);
@@ -35,12 +35,11 @@ public class ConsumerSample {
 		return properties;
 	}
 
-	private void printRecords(String consumerName, KafkaConsumer<String, String> consumer) {
-		var consumer1Pool = consumer.poll(Duration.ofMillis(500));
-		consumer1Pool.records(ConsumerSample.TOPIC).forEach(data -> {
+	public void printRecords(String consumerName, KafkaConsumer<String, String> consumer) {
+		var consumerPool = consumer.poll(Duration.ofMillis(500));
+		consumerPool.records(ConsumerSample.TOPIC).forEach(data ->
 			logger.info(String.format("%s - Topic: %s, Partition: %s, Offset: %s",
-					consumerName, data.topic(), data.partition(), data.offset()));
-		});
+					consumerName, data.topic(), data.partition(), data.offset())));
 	}
 
 	public static void main(String[] args) throws ExecutionException, InterruptedException{
@@ -50,10 +49,12 @@ public class ConsumerSample {
 		 *
 		 * The AUTO_OFFSET_RESET_CONFIG=earliest should read all records from all the partitions from the offset 0.
 		 * The messages will also be ordered by the offset 0, 1, 2...n.
+		 *
+		 * Because the consumers are in 2 different groups. Each consumer will receive all the messages for each partition.
 		 */
 		var sample = new ConsumerSample();
 		var consumer1 = new KafkaConsumer<String, String>(sample.getProperties("fist-group", "earliest"));
-		var consumer2 = new KafkaConsumer<String, String>(sample.getProperties("fist-group", "earliest"));
+		var consumer2 = new KafkaConsumer<String, String>(sample.getProperties("second-group", "earliest"));
 		/**
 		 * Subscribe on the same topic
 		 */
@@ -76,7 +77,8 @@ public class ConsumerSample {
 			var record = new ProducerRecord<>(ConsumerSample.TOPIC, "key_" + i, "message");
 			kafkaProducer.send(record, (RecordMetadata metadata, Exception exception) -> {
 				if (exception == null) {
-					logger.info(String.format("Sent to: Topic: %s, offset: %s, partition: %s", metadata.topic(), metadata.offset(), metadata.partition()));
+					logger.info(String.format("Sent to: Topic: %s, offset: %s, partition: %s",
+							metadata.topic(), metadata.offset(), metadata.partition()));
 				}
 			}).get();
 		}
@@ -88,17 +90,5 @@ public class ConsumerSample {
 		 */
 		sample.printRecords("consumer1", consumer1);
 		sample.printRecords("consumer2", consumer2);
-
-		sample.waitMethod();
-	}
-
-	private synchronized void waitMethod() {
-		while (true) {
-			try {
-				this.wait(2000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
 	}
 }
